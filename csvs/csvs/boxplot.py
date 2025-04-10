@@ -47,7 +47,7 @@ for metric, desc in quality_mapping.items():
     print(f"{metric:<20}: {desc}")
 
 # =================================================================
-# PART B: Class-Level Analysis (All Metrics)
+# PART B: Class-Level Analysis (All Metrics) - IMPROVED VERSION
 # =================================================================
 class_metrics = [
     'SumCyclomatic',
@@ -58,6 +58,9 @@ class_metrics = [
     'CountDeclMethod',
     'CountLineCode'
 ]
+
+# Set consistent figure size for all plots
+plt.figure(figsize=(10, 6))
 
 print("\n=== PART B: Class-Level Analysis ===")
 for metric in class_metrics:
@@ -101,12 +104,43 @@ for metric in class_metrics:
                         "Moderate (20-50)" if value > 20 else "Low (<20)"
             print(f"{tag}: {value:.1f} → {assessment}")
     
-    # Generate boxplot with clean data
-    plt.figure(figsize=(8, 5))
+    # Generate IMPROVED boxplot with clean data
+    plt.figure(figsize=(10, 6))
     try:
-        sns.boxplot(x='Tag', y=metric, data=clean_data, notch=True)
-        plt.title(f'{metric} by Version')
-        plt.savefig(f'outputs/{metric}_boxplot.png', bbox_inches='tight')
+        # Create boxplot with notches and proper formatting
+        sns.boxplot(
+            x='Tag', 
+            y=metric, 
+            data=clean_data, 
+            notch=True,  # Add notches for median confidence intervals
+            showfliers=True,  # Show outliers
+            width=0.5,  # Control box width
+            palette="Set2"  # Use a pleasant color palette
+        )
+        
+        # Calculate and show the 1.5*IQR threshold line
+        q1 = clean_data[metric].quantile(0.25)
+        q3 = clean_data[metric].quantile(0.75)
+        iqr = q3 - q1
+        upper_threshold = q3 + 1.5 * iqr
+        lower_threshold = q1 - 1.5 * iqr
+        
+        # Add proper labels and title
+        plt.title(f'Distribution of {quality_mapping.get(metric, metric)} by Version', pad=20)
+        plt.xlabel('Software Version', labelpad=10)
+        plt.ylabel(quality_mapping.get(metric, metric), labelpad=10)
+        
+        # Adjust y-axis limits to show outliers but not too much empty space
+        y_min = max(clean_data[metric].min(), lower_threshold - iqr)
+        y_max = min(clean_data[metric].max(), upper_threshold + iqr)
+        plt.ylim(y_min, y_max)
+        
+        # Add grid for better readability
+        plt.grid(axis='y', alpha=0.3)
+        
+        # Save with high DPI and tight layout
+        plt.tight_layout()
+        plt.savefig(f'outputs/{metric}_boxplot.png', dpi=300, bbox_inches='tight')
         plt.close()
     except Exception as e:
         print(f"Could not create boxplot for {metric}: {str(e)}")
