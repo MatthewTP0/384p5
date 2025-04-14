@@ -107,6 +107,13 @@ for metric in class_metrics:
     # Generate IMPROVED boxplot with clean data
     plt.figure(figsize=(10, 6))
     try:
+
+         # Determine which metrics should have notches
+        if metric in ['CountClassDerived', 'MaxInheritanceTree', 'CountClassCoupled']:
+            use_notch = False  # Disable notches for these discrete metrics
+        else:
+            use_notch = True   # Enable notches for continuous metrics
+
         # Create boxplot with notches and proper formatting
         sns.boxplot(
             x='Tag', 
@@ -131,13 +138,18 @@ for metric in class_metrics:
         plt.ylabel(quality_mapping.get(metric, metric), labelpad=10)
         
         # Adjust y-axis limits to show outliers but not too much empty space
-        y_min = max(clean_data[metric].min(), lower_threshold - iqr)
-        y_max = min(clean_data[metric].max(), upper_threshold + iqr)
-        plt.ylim(y_min, y_max)
+         # Special y-axis handling for discrete metrics
+        if metric in ['CountClassDerived', 'MaxInheritanceTree']:
+            max_val = int(clean_data[metric].max())
+            plt.yticks(range(0, max_val + 1))
+            plt.ylim(-0.5, max_val + 0.5)
+        else:
+            y_min = max(clean_data[metric].min(), lower_threshold - iqr)
+            y_max = min(clean_data[metric].max(), upper_threshold + iqr)
+            plt.ylim(y_min, y_max)
         
         # Add grid for better readability
         plt.grid(axis='y', alpha=0.3)
-        
         # Save with high DPI and tight layout
         plt.tight_layout()
         plt.savefig(f'outputs/{metric}_boxplot.png', dpi=300, bbox_inches='tight')
